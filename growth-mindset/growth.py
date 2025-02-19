@@ -5,12 +5,14 @@ from io import BytesIO
 
 st.set_page_config(page_title="Data Sweeper", layout="wide")
 
-# Custom CSS for dark subheadings
+# Custom CSS
 st.markdown(
     """
     <style>
-    .stApp { background-color: black; color: white; }
-    h2 { color: #cccccc !important; }  /* Darker subheading color */
+    .stApp {
+        background-color: black;
+        color: white;
+    }
     </style>
     """,
     unsafe_allow_html=True
@@ -36,11 +38,11 @@ if uploaded_files:
             continue
 
         # File details
-        st.write(f"### Preview of `{file.name}`:")  # ✅ Updated for dark subheading
+        st.write(f"Preview of `{file.name}`:")
         st.dataframe(df.head())  
 
         # Data cleaning options
-        st.write("## 🧹 Data Cleaning Options")  # ✅ Dark subheading
+        st.subheader("Data Cleaning Options")
         if st.checkbox(f"Clean data for {file.name}"):
             col1, col2 = st.columns(2)
 
@@ -56,36 +58,31 @@ if uploaded_files:
                     st.write("✅ Missing Values Filled!")
 
         # Column selection
-        st.write("## 🎯 Select Columns to Keep")  # ✅ Dark subheading
+        st.subheader("Select Columns to Keep")
         columns = st.multiselect(f"Choose columns for {file.name}", df.columns, default=df.columns)
         df = df[columns]
 
         # Data visualization
-        st.write("## 📊 Data Visualization")  # ✅ Dark subheading
+        st.subheader("Data Visualization 📊")
         if st.checkbox(f"Show visualization for {file.name}"):
             st.bar_chart(df.select_dtypes(include="number").iloc[:, :2])
 
         # Conversion options
-        st.write("## 🔄 Conversion Options")  # ✅ Dark subheading
+        st.subheader("Conversion Options")
         conversion_type = st.radio(f"Convert {file.name} to:", ["CSV", "Excel"], key=file.name)
 
         if st.button(f"Convert {file.name}"):
-
             buffer = BytesIO()
-
             if conversion_type == "CSV":
-                df.to_csv(buffer, index=False)
+                df.to_csv(buffer, index=False)  # ✅ Fixed Syntax
                 file_name = file.name.replace(file_ext, ".csv")
                 mime_type = "text/csv"
-
             elif conversion_type == "Excel":
-                with pd.ExcelWriter(buffer, engine="xlsxwriter") as writer:
-                    df.to_excel(writer, index=False, sheet_name="Sheet1")
-                    writer.close()  # ✅ Ensures Excel file is saved properly
+                df.to_excel(buffer, index=False)  # ✅ Fixed Syntax
                 file_name = file.name.replace(file_ext, ".xlsx")
                 mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
-            buffer.seek(0)
+            buffer.seek(0)  # ✅ Ensure proper file handling for both formats
 
             # ✅ Download button for both formats
             st.download_button(
@@ -96,4 +93,7 @@ if uploaded_files:
             )
 
         st.success("✅ All files processed successfully!")
+
+
+
 
