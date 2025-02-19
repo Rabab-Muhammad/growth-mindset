@@ -29,17 +29,12 @@ if uploaded_files:
     for file in uploaded_files:
         file_ext = os.path.splitext(file.name)[-1].lower()
 
-        # Read file
-        try:
-            if file_ext == ".csv":
-                df = pd.read_csv(file)  
-            elif file_ext == ".xlsx":
-                df = pd.read_excel(file)  
-            else:
-                st.error(f"Unsupported file type: {file_ext}")
-                continue
-        except Exception as e:
-            st.error(f"Error reading {file.name}: {str(e)}")
+        if file_ext == ".csv":
+            df = pd.read_csv(file)  
+        elif file_ext == ".xlsx":
+            df = pd.read_excel(file)  
+        else:
+            st.error(f"Unsupported file type: {file_ext}")
             continue
 
         # File details
@@ -59,11 +54,8 @@ if uploaded_files:
             with col2:
                 if st.button(f"Fill Missing Values for {file.name}"):
                     numeric_cols = df.select_dtypes(include=['number']).columns  
-                    if not numeric_cols.empty:
-                        df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
-                        st.write("✅ Missing Values Filled!")
-                    else:
-                        st.warning("⚠️ No numeric columns found to fill missing values.")
+                    df[numeric_cols] = df[numeric_cols].fillna(df[numeric_cols].mean())
+                    st.write("✅ Missing Values Filled!")
 
         # Column selection
         st.subheader("Select Columns to Keep")
@@ -73,12 +65,7 @@ if uploaded_files:
         # Data visualization
         st.subheader("Data Visualization 📊")
         if st.checkbox(f"Show visualization for {file.name}"):
-            numeric_df = df.select_dtypes(include="number")
-            
-            if not numeric_df.empty:
-                st.bar_chart(numeric_df.iloc[:, :2])  # First 2 numeric columns
-            else:
-                st.warning("⚠️ No numeric data available for visualization!")
+            st.bar_chart(df.select_dtypes(include="number").iloc[:, :2])
 
         # Conversion options
         st.subheader("Conversion Options")
@@ -86,31 +73,23 @@ if uploaded_files:
 
         if st.button(f"Convert {file.name}"):
             buffer = BytesIO()
-            file_name = file.name.replace(file_ext, f".{conversion_type.lower()}")
+            if conversion_type == "CSV":
+                df.to_csv(buffer, index=False)  # ✅ Fixed Syntax
+                file_name = file.name.replace(file_ext, ".csv")
+                mime_type = "text/csv"
+            elif conversion_type == "Excel":
+                df.to_excel(buffer, index=False)  # ✅ Fixed Syntax
+                file_name = file.name.replace(file_ext, ".xlsx")
+                mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
 
-            try:
-                if conversion_type == "CSV":
-                    df.to_csv(buffer, index=False)
-                    mime_type = "text/csv"
-                elif conversion_type == "Excel":
-                    df.to_excel(buffer, index=False, engine="openpyxl")
-                    mime_type = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet"
+            buffer.seek(0)  # ✅ Ensure proper file handling for both formats
 
-                buffer.seek(0)
+            # ✅ Download button for both formats
+            st.download_button(
+                label=f"Download {file_name}",
+                data=buffer,
+                file_name=file_name,
+                mime=mime_type
+            )
 
-                # ✅ Download button
-                st.download_button(
-                    label=f"Download {file_name}",
-                    data=buffer,
-                    file_name=file_name,
-                    mime=mime_type
-                )
-                st.success(f"✅ {file.name} converted successfully!")
-
-            except Exception as e:
-                st.error(f"Error in conversion: {str(e)}")
-
-
-
-
-
+        st.success("✅ All files processed successfully!")
